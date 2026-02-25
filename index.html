@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Computer Maintenance Scheduler</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f4f4f9;
+display:flex;
+justify-content:center;
+padding:20px;
+}
+
+.container{
+background:white;
+padding:25px;
+border-radius:12px;
+box-shadow:0 4px 8px rgba(0,0,0,0.1);
+width:100%;
+max-width:420px;
+}
+
+h2{
+text-align:center;
+}
+
+label{
+margin-top:10px;
+display:block;
+font-weight:bold;
+}
+
+input,select,textarea,button{
+width:100%;
+padding:10px;
+margin-top:5px;
+border-radius:6px;
+border:1px solid #ccc;
+font-size:15px;
+}
+
+button{
+background:#4CAF50;
+color:white;
+border:none;
+cursor:pointer;
+margin-top:15px;
+}
+
+.cancel{
+background:#f44336;
+}
+
+.deleteBtn{
+background:#333;
+margin-top:8px;
+}
+
+.task-list{
+margin-top:20px;
+}
+
+.task-item{
+background:#e9e9ff;
+padding:12px;
+margin-bottom:10px;
+border-radius:8px;
+font-size:14px;
+}
+
+@media(max-width:500px){
+
+body{padding:10px;}
+
+.container{padding:18px;}
+
+input,select,textarea,button{
+font-size:16px;
+}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Schedule Maintenance</h2>
+
+<form id="maintenanceForm">
+
+<label>Computer Unit</label>
+
+<select id="computer" required>
+<option value="">Select Computer</option>
+<option>PC-01</option>
+<option>PC-02</option>
+<option>PC-03</option>
+<option>PC-04</option>
+<option>PC-05</option>
+</select>
+
+
+<label>Date</label>
+<input type="date" id="date" required>
+
+
+<label>Time</label>
+<input type="time" id="time" required>
+
+
+<label>Maintenance Type</label>
+
+<select id="type" required>
+
+<option value="">Select Type</option>
+<option>Cleaning</option>
+<option>Software Update</option>
+<option>Hardware Check</option>
+<option>Troubleshooting</option>
+
+</select>
+
+
+<label>Technician</label>
+<input type="text" id="technician" required>
+
+
+<label>Notes</label>
+<textarea id="notes"></textarea>
+
+
+<button type="submit">Save</button>
+
+<button type="button" class="cancel" onclick="resetForm()">Cancel</button>
+
+</form>
+
+
+<div class="task-list" id="taskList">
+
+<h3>Upcoming Tasks</h3>
+
+</div>
+
+</div>
+
+
+
+<script>
+
+
+// Notification Permission
+
+if(Notification.permission!=="granted"){
+Notification.requestPermission();
+}
+
+
+
+const form=document.getElementById("maintenanceForm");
+
+const taskList=document.getElementById("taskList");
+
+
+
+let schedules=JSON.parse(localStorage.getItem("schedules"))||[];
+
+
+
+// LOAD SAVED TASKS
+
+displayTasks();
+
+
+
+// SAVE TASK
+
+form.addEventListener("submit",function(e){
+
+e.preventDefault();
+
+
+let computer=document.getElementById("computer").value;
+
+let date=document.getElementById("date").value;
+
+let time=document.getElementById("time").value;
+
+let type=document.getElementById("type").value;
+
+let technician=document.getElementById("technician").value;
+
+let notes=document.getElementById("notes").value;
+
+
+
+// Conflict Check
+
+for(let s of schedules){
+
+if(s.computer===computer && s.date===date && s.time===time){
+
+alert("Schedule Conflict!");
+
+return;
+
+}
+
+}
+
+
+
+let newTask={
+
+computer,
+
+date,
+
+time,
+
+type,
+
+technician,
+
+notes,
+
+notified:false
+
+};
+
+
+
+schedules.push(newTask);
+
+
+
+localStorage.setItem("schedules",
+
+JSON.stringify(schedules));
+
+
+
+displayTasks();
+
+form.reset();
+
+});
+
+
+
+// DISPLAY TASKS
+
+function displayTasks(){
+
+taskList.innerHTML="<h3>Upcoming Tasks</h3>";
+
+schedules.forEach((task,index)=>{
+
+let div=document.createElement("div");
+
+div.className="task-item";
+
+div.innerHTML=`
+
+<strong>${task.computer}</strong> - ${task.type}<br>
+
+Date: ${task.date} | Time: ${task.time}<br>
+
+Technician: ${task.technician}<br>
+
+Notes: ${task.notes||"None"}<br>
+
+
+<button class="deleteBtn"
+
+onclick="deleteTask(${index})">
+
+Delete
+
+</button>
+
+`;
+
+taskList.appendChild(div);
+
+});
+
+}
+
+
+
+// DELETE TASK
+
+function deleteTask(index){
+
+schedules.splice(index,1);
+
+localStorage.setItem("schedules",
+
+JSON.stringify(schedules));
+
+displayTasks();
+
+}
+
+
+
+// RESET FORM
+
+function resetForm(){
+
+form.reset();
+
+}
+
+
+
+// NOTIFICATION CHECKER
+
+setInterval(function(){
+
+let now=new Date();
+
+
+schedules.forEach(task=>{
+
+let taskTime=new Date(task.date+"T"+task.time);
+
+
+if(now>=taskTime && !task.notified){
+
+
+if(Notification.permission==="granted"){
+
+new Notification(
+
+"Maintenance Reminder 🔧",
+
+{
+
+body:
+
+task.computer+
+
+" maintenance time is now",
+
+icon:
+
+"https://cdn-icons-png.flaticon.com/512/3063/3063822.png"
+
+}
+
+);
+
+}
+
+
+task.notified=true;
+
+localStorage.setItem(
+
+"schedules",
+
+JSON.stringify(schedules)
+
+);
+
+
+}
+
+
+});
+
+
+},30000);
+
+
+
+</script>
+
+
+</body>
+</html>
