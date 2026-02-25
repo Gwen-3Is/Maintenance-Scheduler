@@ -1,0 +1,16 @@
+{
+  "notifications": [
+    {
+      "id": "maint-002",
+      "type": "maintenance",
+      "title": "🔧 PC-02 Update",
+      "message": "Software update required for PC-02",
+      "severity": "warning",
+      "date": "2025-02-26",
+      "time": "15:00",
+      "active": true,
+      "computer": "PC-02",
+      "taskType": "Software Update"
+    }
+  ]
+}
